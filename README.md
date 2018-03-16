@@ -1,28 +1,24 @@
 # Snake - Bootloader
 Snake game made in assembly x86. Also bootable.
 Made by: 
-* Fabian Astorga Cerdas
-* Javier Sancho Marin
-* Oscar Ulate Alpizar
+* Fabián Astorga Cerdas
+* Javier Sancho Marín
+* Óscar Ulate Alpízar
 
 ### Compilation
-To compile the source code, go to the source directory and then insert the following command: 
+To compile, generate the .iso file and 'burn' it into the USB, execute the following command:
 
-* $ make 
+* $ sudo make DIR=/dev/sdX 
 
-To umount the destination device, insert the following command: 
+The 'X' on the USB path may be changed with a correct letter on the system. Try typing on terminal to get the USB drive path:
 
-* $ sudo umount /dev/sdb
+* $ sudo fdisk -l 
+
+Make sure the path inserted is the correct device directory.
 
 You can emulate the program if you want to test it. Make sure you have Qemu installed. Insert the following command: 
 
-* $ make emul
-
-To format the destination device in fat32 and place the image file generated to boot device, insert the following command: 
-
-* $ make exec path=/dev/sdb
-
-Make sure the path inserted is the correct device directory.
+* $ sudo make emul
 
 To make a clean, insert the following command: 
 
