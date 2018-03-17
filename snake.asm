@@ -7,8 +7,8 @@ TOTAL_SEGMENTS equ 0x42
 ZERO equ 0x00
 SIZE_PIX equ 0x02
 
-maxScreenX equ 50d
-maxScreenY equ 50d
+maxScreenX equ 0x32
+maxScreenY equ 0x32
 
 
 
@@ -54,15 +54,178 @@ section  .text
 global_start
 
 _start:
-  MOV DX, LEVEL1  ;CONFIGURATE LVL
-  MOV [SpeedLVL], DX
+    call SetVideoMode
+    jmp MainMenu
 
-  MOV DX, 0x00
-  MOV [score], DX
+move_cursor:
+  mov ah, 0x02
+  xor bh, 0
+  int 0x10
+  ret
 
+print:
+  call print_char
+  inc dl
+  call move_cursor
+  ret
+
+print_char:
+  mov ah, 0x0E
+  mov bh, 0x00
+
+  int 0x10
+  ret
+
+MainMenu:
+    .print_title:
+      mov bl, 0xE
+      mov dl, 17
+      mov dh, 3
+      call move_cursor
+      mov al, 'S'
+      call print
+      mov al, 'N'
+      call print
+      mov al, 'A'
+      call print
+      mov al, 'K'
+      call print
+      mov al, 'E'
+      call print
+    .print_level1:
+      mov bl, 0x2
+      mov dl, 13
+      mov dh, 9
+      call move_cursor
+      mov al, 'L'
+      call print
+      mov al, 'V'
+      call print
+      mov al, 'L'
+      call print
+      mov al, ' '
+      call print
+      mov al, '1'
+      call print
+      mov al, '-'
+      call print
+      mov al, 'P'
+      call print
+      mov al, 'R'
+      call print
+      mov al, 'E'
+      call print
+      mov al, 'S'
+      call print
+      mov al, 'S'
+      call print
+      mov al, ' '
+      call print
+      mov al, '1'
+      call print
+    .print_level2:
+      mov dl, 13
+      mov dh, 12
+      call move_cursor
+      mov al, 'L'
+      call print
+      mov al, 'V'
+      call print
+      mov al, 'L'
+      call print
+      mov al, ' '
+      call print
+      mov al, '2'
+      call print
+      mov al, '-'
+      call print
+      mov al, 'P'
+      call print
+      mov al, 'R'
+      call print
+      mov al, 'E'
+      call print
+      mov al, 'S'
+      call print
+      mov al, 'S'
+      call print
+      mov al, ' '
+      call print
+      mov al, '2'
+      call print
+    .print_level3:
+      mov dl, 13
+      mov dh, 15
+      call move_cursor
+      mov al, 'L'
+      call print
+      mov al, 'V'
+      call print
+      mov al, 'L'
+      call print
+      mov al, ' '
+      call print
+      mov al, '3'
+      call print
+      mov al, '-'
+      call print
+      mov al, 'P'
+      call print
+      mov al, 'R'
+      call print
+      mov al, 'E'
+      call print
+      mov al, 'S'
+      call print
+      mov al, 'S'
+      call print
+      mov al, ' '
+      call print
+      mov al, '3'
+      call print
+
+
+      ;call print_string
+    mov ah, 0x00
+    int 0x16    ; Teclado
+
+    call read_level_keys
+
+      ;       This area of code waits a keyboard interruption to select the level
+      ;       of the game while in the main menu
+read_level_keys:
+  cmp al, '1' ; Try with key 02
+  ;   if tecla == 1 -> Start the game in the first level
+  je start_level_1
+  cmp al, '2'
+  je start_level_2
+  cmp al, '3'
+  je start_level_3
+  jmp MainMenu
+
+  start_level_1:
+      mov dx, SCOREL1
+      mov [score], dx
+      mov dx, LEVEL1
+      mov [SpeedLVL], dx
+      jmp _start_game
+  start_level_2:
+      mov dx, SCOREL2
+      mov [score], dx
+      mov dx, LEVEL2
+      mov [SpeedLVL], dx
+      jmp _start_game
+  start_level_3:
+      mov dx, SCOREL3
+      mov [score], dx
+      mov dx, LEVEL3
+      mov [SpeedLVL], dx
+      jmp _start_game
+
+_start_game:
   MOV DX, UP
   MOV [last_move], DX
-  CALL SetVideoMode
+  ;CALL SetVideoMode
   CALL SetInitialCoords
   CALL SetScreen
   mov	ax, 0x0305
