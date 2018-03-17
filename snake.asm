@@ -11,17 +11,18 @@ maxScreenX equ 50d
 maxScreenY equ 50d
 
 
-DOWN equ 0x50
+
 UP equ 0x48
 LEFT equ 0x4B
 RIGHT equ 0x4D
+DOWN equ 0x50
 
 LEVEL1 equ 0x0004
 LEVEL2 equ 0x0002
 LEVEL3 equ 0x0001
 
 
-
+SCOREL1 equ 0x0
 SCOREL2 equ 0x5 ;0x64 100
 SCOREL3 equ 0xA ;0xC8 200
 
@@ -59,7 +60,7 @@ _start:
   MOV DX, 0x00
   MOV [score], DX
 
-  MOV DX, 0x77
+  MOV DX, UP
   MOV [last_move], DX
   CALL SetVideoMode
   CALL SetInitialCoords
@@ -129,7 +130,7 @@ ListenForInput:  ;Repeatedly check for keyboard input
   JMP continue
 
   done_clear:
-    mov	al, [last_move]	; no keys, so we use the last one
+    mov	ah, [last_move]	; no keys, so we use the last one
 
   continue:
   CALL InterpretKeypress
@@ -144,20 +145,20 @@ ListenForInput:  ;Repeatedly check for keyboard input
   RET
 
 InterpretKeypress:
-  CMP AL, 0x77  ; compara la tecla presionada con w
-  MOV	[last_move], AL	; save the direction
+  CMP AH, UP  ; compara la tecla presionada con w
+  MOV	[last_move], AH	; save the direction
   JE .u_pressed
 
-  CMP AL, 0x61 ;compara la tecla presionada con a
-  MOV	[last_move], AL	; save the direction
+  CMP AH, LEFT ;compara la tecla presionada con a
+  MOV	[last_move], AH	; save the direction
   JE .l_pressed
 
-  CMP AL, 0x73 ; compara la tecla presionada con s
-  MOV	[last_move], AL	; save the direction
+  CMP AH, DOWN ; compara la tecla presionada con s
+  MOV	[last_move], AH	; save the direction
   JE .d_pressed
 
-  CMP AL, 0x64 ; compara la tecla presionada con d
-  MOV	[last_move], AL	; save the direction
+  CMP AH, RIGHT ; compara la tecla presionada con d
+  MOV	[last_move], AH	; save the direction
   JE .r_pressed
 
   RET ; Invalid keypress, start listening again
