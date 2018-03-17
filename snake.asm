@@ -2,15 +2,17 @@
 [BITS 16]
 [ORG 0x0000]
 
+
+%assign SYS_EXIT        1
+%assign SYS_WRITE       4
+%assign STDOUT          1
+
 TOTAL_SEGMENTS equ 0x42
 
 ZERO equ 0x00
-SIZE_PIX equ 0x02
 
 maxScreenX equ 0x32
 maxScreenY equ 0x32
-
-
 
 UP equ 0x48
 LEFT equ 0x4B
@@ -26,36 +28,131 @@ SCOREL1 equ 0x0
 SCOREL2 equ 0x5 ;0x64 100
 SCOREL3 equ 0xA ;0xC8 200
 
-;checkScore
-;grow score
-;print score
-
 section .bss
   x_coord   RESW TOTAL_SEGMENTS ; [x_coord] is the head, [x_coord+2] is the next cell, etc.
   y_coord   RESW TOTAL_SEGMENTS ; Same here
   t1        RESB 2
   t2        RESB 2
-  enabled   RESB 2  ;cantidad de elemetos de la serpiente
-  x_apple   RESB 2
-  y_apple   RESB 2
+  enabled   RESB 2  ;amount of elements of the snake
+  x_apple   RESB 2 ;position x for the apple
+  y_apple   RESB 2 ;position y for the apple
 
-  last_x   RESB 2
-  last_y   RESB 2
+  last_x   RESB 2 ;last position of the snake
+  last_y   RESB 2 ;last position of the snake
   collision RESB 2
 
   last_move RESB 2
 
   score     RESB 2
 
-  SpeedLVL  RESB 2
+  SpeedLVL  RESB 4
 
 
 section  .text
 global_start
 
 _start:
-    call SetVideoMode
-    jmp MainMenu
+    CALL SetVideoMode
+    CALL MainMenu
+    CALL read_level_keys
+    MOV DX, UP
+    MOV [last_move], DX
+    CALL SetInitialCoords
+    CALL SetScreen
+
+
+    JMP ListenForInput
+
+
+
+
+score_label:
+    mov bl, 0x0F
+    mov dl, 0
+    mov dh, 7
+    call move_cursor
+    mov al, 'S'
+    call print
+    mov al, 'C'
+    call print
+    mov al, 'O'
+    call print
+    mov al, 'R'
+    call print
+    mov al, 'E'
+    call print
+    mov al, ':'
+    call print
+    RET
+
+MainMenu:
+  .print_title:
+    mov bl, 0xE
+    mov dl, 17
+    mov dh, 3
+    call move_cursor
+    mov al, 'S'
+    call print
+    mov al, 'N'
+    call print
+    mov al, 'A'
+    call print
+    mov al, 'K'
+    call print
+    mov al, 'E'
+    call print
+  .print_level1:
+    mov bl, 0x2
+    mov dl, 13
+    mov dh, 9
+    call move_cursor
+    mov al, 'L'
+    call print
+    mov al, 'V'
+    call print
+    mov al, '1'
+    call print
+    mov al, '-'
+    call print
+    mov al, ' '
+    call print
+    mov al, '1'
+    call print
+  .print_level2:
+    mov dl, 13
+    mov dh, 12
+    call move_cursor
+    mov al, 'L'
+    call print
+    mov al, 'V'
+    call print
+    mov al, '2'
+    call print
+    mov al, '-'
+    call print
+    mov al, ' '
+    call print
+    mov al, '2'
+    call print
+  .print_level3:
+    mov dl, 13
+    mov dh, 15
+    call move_cursor
+    mov al, 'L'
+    call print
+    mov al, 'V'
+    call print
+    mov al, '3'
+    call print
+    mov al, '-'
+    call print
+    mov al, ' '
+    call print
+    mov al, '3'
+    call print
+    RET
+
+
 
 move_cursor:
   mov ah, 0x02
@@ -76,162 +173,28 @@ print_char:
   int 0x10
   ret
 
-MainMenu:
-    .print_title:
-      mov bl, 0xE
-      mov dl, 17
-      mov dh, 3
-      call move_cursor
-      mov al, 'S'
-      call print
-      mov al, 'N'
-      call print
-      mov al, 'A'
-      call print
-      mov al, 'K'
-      call print
-      mov al, 'E'
-      call print
-    .print_level1:
-      mov bl, 0x2
-      mov dl, 13
-      mov dh, 9
-      call move_cursor
-      mov al, 'L'
-      call print
-      mov al, 'V'
-      call print
-      mov al, 'L'
-      call print
-      mov al, ' '
-      call print
-      mov al, '1'
-      call print
-      mov al, '-'
-      call print
-      mov al, 'P'
-      call print
-      mov al, 'R'
-      call print
-      mov al, 'E'
-      call print
-      mov al, 'S'
-      call print
-      mov al, 'S'
-      call print
-      mov al, ' '
-      call print
-      mov al, '1'
-      call print
-    .print_level2:
-      mov dl, 13
-      mov dh, 12
-      call move_cursor
-      mov al, 'L'
-      call print
-      mov al, 'V'
-      call print
-      mov al, 'L'
-      call print
-      mov al, ' '
-      call print
-      mov al, '2'
-      call print
-      mov al, '-'
-      call print
-      mov al, 'P'
-      call print
-      mov al, 'R'
-      call print
-      mov al, 'E'
-      call print
-      mov al, 'S'
-      call print
-      mov al, 'S'
-      call print
-      mov al, ' '
-      call print
-      mov al, '2'
-      call print
-    .print_level3:
-      mov dl, 13
-      mov dh, 15
-      call move_cursor
-      mov al, 'L'
-      call print
-      mov al, 'V'
-      call print
-      mov al, 'L'
-      call print
-      mov al, ' '
-      call print
-      mov al, '3'
-      call print
-      mov al, '-'
-      call print
-      mov al, 'P'
-      call print
-      mov al, 'R'
-      call print
-      mov al, 'E'
-      call print
-      mov al, 'S'
-      call print
-      mov al, 'S'
-      call print
-      mov al, ' '
-      call print
-      mov al, '3'
-      call print
+game_over_label:
+    mov bl, 0x0F
+    mov dl, 17
+    mov dh, 5
+    call move_cursor
+    mov al, 'E'
+    call print
+    mov al, 'N'
+    call print
+    mov al, 'D'
+    call print
+    mov al, '!'
+    call print
+    RET
 
 
-      ;call print_string
-    mov ah, 0x00
-    int 0x16    ; Teclado
-
-    call read_level_keys
-
-      ;       This area of code waits a keyboard interruption to select the level
-      ;       of the game while in the main menu
-read_level_keys:
-  cmp al, '1' ; Try with key 02
-  ;   if tecla == 1 -> Start the game in the first level
-  je start_level_1
-  cmp al, '2'
-  je start_level_2
-  cmp al, '3'
-  je start_level_3
-  jmp MainMenu
-
-  start_level_1:
-      mov dx, SCOREL1
-      mov [score], dx
-      mov dx, LEVEL1
-      mov [SpeedLVL], dx
-      jmp _start_game
-  start_level_2:
-      mov dx, SCOREL2
-      mov [score], dx
-      mov dx, LEVEL2
-      mov [SpeedLVL], dx
-      jmp _start_game
-  start_level_3:
-      mov dx, SCOREL3
-      mov [score], dx
-      mov dx, LEVEL3
-      mov [SpeedLVL], dx
-      jmp _start_game
-
-_start_game:
-  MOV DX, UP
-  MOV [last_move], DX
-  ;CALL SetVideoMode
-  CALL SetInitialCoords
-  CALL SetScreen
-  mov	ax, 0x0305
-	mov	bx, 0x031F
-	int	0x16		; increase delay before keybort repeat
-  CALL ListenForInput
+halt:
+	mov ah, 0x0		;Set ah to 0
+	int 0x16		;Get keystroke interrupt
+	cmp ah, 0x1C	;Restart if enter arrow pressed
+	je _start
+	jmp halt
 
 SetVideoMode:
   MOV AH, 0x00
@@ -257,6 +220,7 @@ SetScreen:
    CMP DX, maxScreenY ; final de la pantalla en y
    JNAE .x_loop_begin
   .x_loop_end:
+  CALL score_label
   RET
 
 SetInitialCoords:
@@ -268,14 +232,14 @@ SetInitialCoords:
   .initialize_loop_begin: ;esta porcion le asigna un valor de la coordenada a cada elemento dentro de los arreglos x,y
    MOV [x_coord+BX], AX
    MOV [y_coord+BX], AX
-   ADD BX, SIZE_PIX
+   ADD BX, 0x02
    CMP BX, DX
    JNE .initialize_loop_begin
 
   MOV AX, ZERO
   MOV [t1]       , AX
   MOV [t2]       , AX
-  MOV AX, 5             ;numero de elementos con el que va a iniciar
+  MOV AX, 3             ;numero de elementos con el que va a iniciar
   MOV [enabled]  , AX
 
   CALL RandomNumber ;set first apple
@@ -285,24 +249,24 @@ SetInitialCoords:
   RET
 
 ListenForInput:  ;Repeatedly check for keyboard input
-  mov	ah, 0x01	; check if key available
-  int	0x16
-  jz done_clear
-  mov	ah, 0x00	; if there was a key, remove it from buffer
-  int	0x16
-  JMP continue
+  MOV	AH, 0x01	; check if key available
+  INT	0x16
+  JZ .done_clear
+  MOV	AH, 0x00	; if there was a key, remove it from buffer
+  INT	0x16
+  JMP .continue
 
-  done_clear:
-    mov	ah, [last_move]	; no keys, so we use the last one
+  .done_clear:
+    MOV	AH, [last_move]	; no keys, so we use the last one
 
-  continue:
+  .continue:
   CALL InterpretKeypress
 
-  sleep:
-    mov	cx, [SpeedLVL]	; Sleep for 0,15 seconds (cx:dx)
-    mov	dx, 0x49F0	; 0x000249F0 = 150000
-    mov	ah, 0x86
-    int	0x15		; Sleep
+  .sleep:
+    MOV	cx, [SpeedLVL]	; Sleep for 0,15 seconds (cx:dx)
+    MOV dx, 0x49F0	; 0x000249F0 = 150000
+    MOV	ah, 0x86
+    INT	0x15		; Sleep
 
   CALL ListenForInput
   RET
@@ -361,7 +325,17 @@ InterpretKeypress:
   CALL DrawSnake
   CALL DrawApple
   CALL CheckLVL
+  CALL PrintScore
   RET
+
+PrintScore:
+    MOV bl, 0x0F
+    MOV dl, 0x0
+    MOV dh, 0x8
+    CALL move_cursor
+    MOV	AX, [score]	; move the score into ax
+    CALL	print_int	; print it
+    RET
 
 CheckLVL:
     MOV DX, [score]
@@ -374,13 +348,24 @@ CheckLVL:
   .setLVL2:
     MOV DX, LEVEL2
     MOV [SpeedLVL], DX
+    CALL SetScreen
+    CALL SetInitialCoords
+    MOV DX, [score]
+    INC DX
+    MOV [score], DX
     JMP .end
 
   .setLVL3:
     MOV DX, LEVEL3
     MOV [SpeedLVL], DX
+    CALL SetScreen
+    CALL SetInitialCoords
+    MOV DX, [score]
+    INC DX
+    MOV [score], DX
 
   .end:
+
     RET
 
 
@@ -419,15 +404,15 @@ CheckWallCollision:
   RET
   ;Colocar mensaje de perder
   .collision_w:
-  CALL game_over ; reinicia el juego si choca
+  JMP game_over ; reinicia el juego si choca
 
 CheckSelfCollision:
   MOV BX, [enabled]
-  ;MOV [col], BX
+  MOV [collision], BX
 
   .snake_collision_loop_begin:
    CMP BX, ZERO
-   JBE .skip
+   JBE .skip_self
    MOV [collision], BX
    ADD BX, BX
    MOV CX, [x_coord+BX]
@@ -438,13 +423,15 @@ CheckSelfCollision:
    JNE .snake_collision_loop_begin
    CMP DX, [last_y]
    JNE .snake_collision_loop_begin
-   CALL game_over ; si ambos son iguales reinicie program
 
-  .skip:
+   JMP game_over ; si ambos son iguales reinicie program
+
+  .skip_self:
   RET
 
 game_over:
-    JMP _start
+    CALL game_over_label
+    JMP halt
 
 DrawApple:
   MOV CX, [x_apple] ; posicion x del Pixel
@@ -460,7 +447,7 @@ DrawSnake:
 
    .draw_snake_loop_begin:
     CMP BX, ZERO
-    JBE .skip
+    JBE .skip_draw
     MOV [t1], BX
     ADD BX, BX
     MOV CX, [x_coord+BX]
@@ -474,7 +461,7 @@ DrawSnake:
     DEC BX
     JMP .draw_snake_loop_begin
 
-  .skip:
+  .skip_draw:
   RET
 
 ShiftArray:
@@ -511,3 +498,65 @@ RandomNumber: ;genera un numero aleatorio
   CMP AX, maxScreenX
   JG RandomNumber
   RET
+
+  print_int: ; print the int in ax
+  push bp ; save bp on the stack
+  mov bp, sp ; set bp = stack pointer
+
+  push_digits:
+  xor dx, dx ; clear dx for division
+  mov bx, 10 ; set bx to 10
+  div bx ; divide by 10
+  push dx ; store remainder on stack
+  test ax, ax ; check if quotient is 0
+  jnz push_digits ; if not, loop
+
+  pop_and_print_digits:
+  pop ax ; get first digit from stack
+  add al, '0' ; turn it into ascii digits
+  call print_char_int ; print it
+  cmp sp, bp ; is the stack pointer is at where we began?
+  jne pop_and_print_digits ; if not, loop
+  pop bp ; if yes, restore bp
+  ret
+
+  print_char_int:
+  mov ah, 0x0E ;t ell BIOS that we need to print one charater on screen
+  mov bh, 0x00 ; page number
+  mov bl, 0x07 ; text attribute 0x07 is lightgrey font on black background
+  int 0x10
+  ret
+
+read_level_keys:
+  mov ah, 0x00
+  int 0x16
+  cmp al, '1' ; Try with key 02
+  ;   if tecla == 1 -> Start the game in the first level
+  je .start_level_1
+  cmp al, '2'
+  je .start_level_2
+  cmp al, '3'
+  je .start_level_3
+  CALL read_level_keys
+  RET
+
+  .start_level_1:
+      mov dx, SCOREL1
+      mov [score], dx
+      mov dx, LEVEL1
+      mov [SpeedLVL], dx
+      RET
+
+  .start_level_2:
+      mov dx, SCOREL2
+      mov [score], dx
+      mov dx, LEVEL2
+      mov [SpeedLVL], dx
+      RET
+
+  .start_level_3:
+      mov dx, SCOREL3
+      mov [score], dx
+      mov dx, LEVEL3
+      mov [SpeedLVL], dx
+      RET

@@ -16,9 +16,9 @@ bin:
 		$(CC) $(FLAGS) $(SNAKE)$(ASM) -o $(SNAKE)$(BIN)
 
 image:
-		$(DD) if=$(ZERO) of=$(SNAKE)$(IMG) bs=1024 count=512
+		$(DD) if=$(ZERO) of=$(SNAKE)$(IMG) bs=1024 count=1024
 		$(DD) if=$(BOOT)$(BIN) of=$(SNAKE)$(IMG) conv=notrunc
-		$(DD) if=$(SNAKE)$(BIN) of=$(SNAKE)$(IMG) bs=512 seek=1 conv=notrunc
+		$(DD) if=$(SNAKE)$(BIN) of=$(SNAKE)$(IMG) bs=1024 seek=1 conv=notrunc
 
 usb:
 		$(DD) if=$(SNAKE)$(IMG) of=$(DIR)
