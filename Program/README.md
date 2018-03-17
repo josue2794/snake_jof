@@ -6,9 +6,13 @@ Made by:
 * Óscar Ulate Alpízar
 
 ### Compilation
-To compile, generate the .iso file and 'burn' it into the USB, execute the following command:
+To compile, execute the following command:
 
-* $ sudo make DIR=/dev/sdX 
+* $ sudo make 
+
+To 'burn' the iso file into the USB, execute the following command:
+
+* $ sudo make usb DIR=/dev/sdX
 
 The 'X' on the USB path may be changed with a correct letter on the system. Try typing on terminal to get the USB drive path:
 
