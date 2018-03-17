@@ -16,6 +16,11 @@ UP equ 0x48
 LEFT equ 0x4B
 RIGHT equ 0x4D
 
+
+
+section .data:
+    msg1 db 'SNAKE', 0x00
+
 section .bss
   x_coord   RESW TOTAL_SEGMENTS ; [x_coord] is the head, [x_coord+2] is the next cell, etc. ;arreglo de coordenadas x
   y_coord   RESW TOTAL_SEGMENTS ; Same here
@@ -37,46 +42,216 @@ _start:
     INT 0x10
     ;call SetVideoMode
     jmp MainMenu   ; Llama al menu para que sea lo primero que muestre
-    MOV DX, 0x77
-    MOV [last_move], DX
-    CALL SetVideoMode
-    CALL SetInitialCoords
-    CALL SetScreen
-    mov	ax, 0x0305
-    mov	bx, 0x031F
-    int	0x16		; increase delay before keybort repeat
-    CALL ListenForInput
+    ;MOV DX, 0x77
+    ;MOV [last_move], DX
+    ;CALL SetVideoMode
+    ;CALL SetInitialCoords
+    ;CALL SetScreen
+    ;mov	ax, 0x0305
+    ;mov	bx, 0x031F
+    ;int	0x16		; increase delay before keybort repeat
+    ;CALL ListenForInput
+
+; DX cursor position
+move_cursor:
+  mov ah, 0x02
+  xor bh, 0
+  int 0x10
+  ret
+
+print_string:
+    mov si, msg1
+    mov dl, 17
+    mov dh, 3
+    call move_cursor
+.loop:
+    mov al, [si]
+    cmp al, 0x00
+    je .done
+    call print_char
+    inc si
+    inc dl
+    jmp .loop
+.done:
+    ret
+
+print:
+    call print_char
+    inc dl
+    call move_cursor
+    ret
+
+print_char:
+    mov ah, 0x0E
+    mov bh, 0x00
+
+    int 0x10
+    ret
 
 MainMenu:
-    .show_title:
-        ;call SetVideoMode
-        mov al, 1
-        mov bh, 0
-        mov bl, 0xF ;color
-        mov cx, msg1end - msg1 ; calculate message size.
+    .print_title:
+        mov bl, 0xE
         mov dl, 17
         mov dh, 3
-        push cs
-        pop es
-        mov bp, msg1
-        mov ah, 13h
-        int 10h
-        jmp msg1end
-        msg1 db 'SNAKE'
-        msg1end:
-    .show_level_1:
-        mov cx, msg2end - msg2 ; calculate message size.
-        mov dl, 17
-        mov dh, 6
-        push cs
-        pop es
-        mov bp, msg2
-        mov ah, 13h
-        int 10h
-        jmp msg2end
-        msg2 db 'LEVEL 1 - PRESS 1'
-        msg2end:
-        jmp MainMenu
+        call move_cursor
+        mov al, 'S'
+        call print
+        mov al, 'N'
+        call print
+        mov al, 'A'
+        call print
+        mov al, 'K'
+        call print
+        mov al, 'E'
+        call print
+    .print_level1:
+        mov bl, 0x2
+        mov dl, 13
+        mov dh, 9
+        call move_cursor
+        mov al, 'L'
+        call print
+        mov al, 'V'
+        call print
+        mov al, 'L'
+        call print
+        mov al, ' '
+        call print
+        mov al, '1'
+        call print
+        mov al, '-'
+        call print
+        mov al, 'P'
+        call print
+        mov al, 'R'
+        call print
+        mov al, 'E'
+        call print
+        mov al, 'S'
+        call print
+        mov al, 'S'
+        call print
+        mov al, ' '
+        call print
+        mov al, '1'
+        call print
+    .print_level2:
+        mov dl, 13
+        mov dh, 12
+        call move_cursor
+        mov al, 'L'
+        call print
+        mov al, 'V'
+        call print
+        mov al, 'L'
+        call print
+        mov al, ' '
+        call print
+        mov al, '2'
+        call print
+        mov al, '-'
+        call print
+        mov al, 'P'
+        call print
+        mov al, 'R'
+        call print
+        mov al, 'E'
+        call print
+        mov al, 'S'
+        call print
+        mov al, 'S'
+        call print
+        mov al, ' '
+        call print
+        mov al, '2'
+        call print
+    .print_level3:
+        mov dl, 13
+        mov dh, 15
+        call move_cursor
+        mov al, 'L'
+        call print
+        mov al, 'V'
+        call print
+        mov al, 'L'
+        call print
+        mov al, ' '
+        call print
+        mov al, '3'
+        call print
+        mov al, '-'
+        call print
+        mov al, 'P'
+        call print
+        mov al, 'R'
+        call print
+        mov al, 'E'
+        call print
+        mov al, 'S'
+        call print
+        mov al, 'S'
+        call print
+        mov al, ' '
+        call print
+        mov al, '3'
+        call print
+
+
+        ;call print_string
+    mov ah, 0x00
+    int 0x16    ; Teclado
+
+    call read_level_keys
+    jmp MainMenu
+
+;       This area of code waits a keyboard interruption to select the level
+;       of the game while in the main menu
+read_level_keys:
+    cmp al, '1' ; Try with key 02
+    ;   if tecla == 1 -> Start the game in the first level
+    je start_level_1
+    cmp al, '2'
+    je start_level_2
+    cmp al, '3'
+    je start_level_3
+    ret
+
+start_level_1:
+    mov dx, SCOREL1
+    mov [score], dx
+    mov dx, LEVEL1
+    mov [SpeedLVL], dx
+    jmp start
+start_level_2:
+    mov dx, SCOREL2
+    mov [score], dx
+    mov dx, LEVEL2
+    mov [SpeedLVL], dx
+    jmp start
+start_level_3:
+    mov dx, SCOREL3
+    mov [score], dx
+    mov dx, LEVEL3
+    mov [SpeedLVL], dx
+    jmp start
+;        ;call SetVideoMode
+;        mov al, 1
+;        mov bh, 0
+;        mov bl, 0xF ;color
+;        mov cx, msg1end - msg1 ; calculate message size.
+;        mov dl, 17
+;        mov dh, 3
+;        push cs
+;        pop es
+;        mov bp, msg1
+;        mov ah, 13h
+;        int 10h
+;        jmp msg1end
+
+;        msg1end:
+;        jmp MainMenu
+
+
 
 SetVideoMode:
   MOV AH, 0x00
@@ -84,233 +259,7 @@ SetVideoMode:
   INT 0x10
   RET
 
-SetScreen:
-  MOV CX, 0x00 ;Coordenada de inicio en x o y
-  MOV DX, 0x00 ;Coordenada de inicio en x o y
-  MOV AL, 0x08 ; Color de la pantalla
-  MOV BH, 0x00
-  MOV AH, 0x0C ;modo writePixel
-  .x_loop_begin:
-   MOV CX, 0x00
-   .y_loop_begin:
-    INT 0x10
-    INC CX
-    CMP CX, maxScreenX ; final de la pantalla en x
-    JNAE .y_loop_begin
-   .y_loop_end:
-   INC DX
-   CMP DX, maxScreenY ; final de la pantalla en y
-   JNAE .x_loop_begin
-  .x_loop_end:
-  RET
 
-SetInitialCoords:
-  MOV AX, 0x0F ; Initial x/y coord
-  MOV BX, 0x00
-  MOV DX, TOTAL_SEGMENTS
-  ADD DX, DX
-
-  .initialize_loop_begin: ; parece que esta porcion le asigna un valor de la coordenada a cada elemento dentro de los arreglos x,y
-   MOV [x_coord+BX], AX
-   MOV [y_coord+BX], AX
-   ADD BX, SIZE_PIX
-   CMP BX, DX
-   JNE .initialize_loop_begin
-
-  MOV AX, ZERO
-  MOV [t1]       , AX
-  MOV [t2]       , AX
-  MOV AX, 5             ;numero de elementos con el que va a iniciar
-  MOV [enabled]  , AX
-
-  CALL RandomNumber ;set first apple
-  MOV [x_apple], AX
-  CALL RandomNumber
-  MOV [y_apple], AX
-  RET
-
-ListenForInput:  ;Repeatedly check for keyboard input
-  mov	ah, 0x01	; check if key available
-  int	0x16
-  jz done_clear
-  mov	ah, 0x00	; if there was a key, remove it from buffer
-  int	0x16
-  JMP continue
-
-  done_clear:
-    mov	al, [last_move]	; no keys, so we use the last one
-
-  continue:
-  CALL InterpretKeypress
-
-  sleep:
-    mov	cx, 0x0002	; Sleep for 0,15 seconds (cx:dx)
-    mov	dx, 0x49F0	; 0x000249F0 = 150000
-    mov	ah, 0x86
-    int	0x15		; Sleep
-
-
-
-  CALL ListenForInput
-  RET
-
-
-
-InterpretKeypress:
-  CMP AL, 0x77  ; compara la tecla presionada con w
-  MOV	[last_move], AL	; save the direction
-  JE .u_pressed
-
-
-  CMP AL, 0x61 ;compara la tecla presionada con a
-  MOV	[last_move], AL	; save the direction
-  JE .l_pressed
-
-
-  CMP AL, 0x73 ; compara la tecla presionada con s
-  MOV	[last_move], AL	; save the direction
-  JE .d_pressed
-
-  CMP AL, 0x64 ; compara la tecla presionada con d
-  MOV	[last_move], AL	; save the direction
-  JE .r_pressed
-
-  RET ; Invalid keypress, start listening again
-
-  .u_pressed:
-  MOV AX, [x_coord]
-  MOV BX, [y_coord]
-  DEC BX                    ; para decrementar la posicion de los pixeles se debe tomar en cuenta el tamaño del pixel
-  JMP .after_control_handle
-
-  .l_pressed:
-  MOV AX, [x_coord]
-  MOV BX, [y_coord]
-  DEC AX
-  JMP .after_control_handle
-
-  .d_pressed:
-  MOV AX, [x_coord]
-  MOV BX, [y_coord]
-  INC BX
-  JMP .after_control_handle
-
-  .r_pressed:
-  MOV AX, [x_coord]
-  MOV BX, [y_coord]
-  INC AX
-
-  .after_control_handle:  ; coloca en t1 y t2 posicion capturada al mover la serpiente
-  MOV [t1], AX
-  MOV [t2], BX
-  CALL CheckWallCollision
-  CALL CheckAppleCollision
-  CALL ShiftArray
-  CALL DrawSnake
-  CALL DrawApple
-  RET
-
-CheckAppleCollision:
-  CMP AX, [x_apple] ;verifica si la posicion x de la manzana es igual a la cabeza del snake
-  JNE .no_collision
-
-  CMP BX, [y_apple] ;verifica si la posicion y de la manzana es igual a la cabeza del snake
-  JNE .no_collision
-
-  MOV AX, [enabled] ; Cuando colisiona con la manzana se incrementa en 1 enabled
-  INC AX
-  MOV [enabled], AX
-
-  CALL RandomNumber
-  MOV [x_apple], AX
-  CALL RandomNumber
-  MOV [y_apple], AX
-
-  .no_collision:
-  RET
-
-CheckWallCollision:
-  CMP AX, maxScreenX ;verifica si la posicion x de la manzana es igual a la cabeza del snake
-  JE .collision_w
-
-  CMP BX, maxScreenY ;verifica si la posicion y de la manzana es igual a la cabeza del snake
-  JE .collision_w
-
-  CMP AX, ZERO ;verifica si la posicion x de la manzana es igual a la cabeza del snake
-  JE .collision_w
-
-  CMP BX, ZERO ;verifica si la posicion y de la manzana es igual a la cabeza del snake
-  JE .collision_w
-
-  RET
-  ;Colocar mensaje de perder
-
-
-  .collision_w:
-  JMP _start
-
-
-DrawApple:
-  MOV CX, [x_apple] ; posicion x del Pixel
-  MOV DX, [y_apple] ; posicion y del Pixel
-  MOV AL, 0x0C   ; Color del pixel
-  CALL DrawPixel
-  RET
-
-DrawSnake:
-   MOV BX, [enabled]
-   MOV AL, 0x08
-   MOV [t1], BX
-
-   .draw_snake_loop_begin:
-    CMP BX, ZERO
-    JBE .skip
-    MOV [t1], BX
-    ADD BX, BX
-    MOV CX, [x_coord+BX]
-    MOV DX, [y_coord+BX]
-    CALL DrawPixel
-    MOV AL, 0x0A
-    MOV CX, [x_coord]
-    MOV DX, [y_coord]
-    CALL DrawPixel
-    MOV BX, [t1]
-    DEC BX
-    JMP .draw_snake_loop_begin
-
-  .skip:
-  RET
-
-ShiftArray:
-  MOV BX, TOTAL_SEGMENTS ; mueve el arreglo de posiciones del Snake
-  DEC BX
-  ADD BX, BX            ;BX vale dos veces la cantidad maxima de elementos de snake
-  .loop_begin:
-   ADD BX, -2           ;resta 2 a BX
-   MOV DX, [x_coord+BX] ;asigna la N-1 posicion de x a DX
-   MOV CX, [y_coord+BX] ;asigna la N-1 posicion de y a CX
-   ADD BX, 2            ; suma 2 a BX
-   MOV [x_coord+BX], DX ; hace un swap de la N-1 posicion a la N posicion
-   MOV [y_coord+BX], CX
-   ADD BX, -2
-   CMP BX, ZERO
-   JNE .loop_begin
-  MOV DX, [t1]
-  MOV [x_coord], DX
-  MOV DX, [t2]
-  MOV [y_coord], DX
-  RET
-
-DrawPixel:
-  MOV AH, 0x0C     ; Draw mode ; Coloca en modo write pixel
-  MOV BH, 0x00     ; Pg 0
-  INT 0x10         ; Draw
-  RET
-
-RandomNumber: ;genera un numero aleatorio
-  RDTSC
-  AND EAX, 0xF
-  RET
 
 
 ;TIMES (510 - $) db 0  ;Fill the rest of sector with 0
