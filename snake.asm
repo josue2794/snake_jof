@@ -39,11 +39,11 @@ section .bss
 
   last_x   RESB 2 ;last position of the snake
   last_y   RESB 2 ;last position of the snake
-  collision RESB 2
+  collision RESB 2 ;variable to verify collisions
 
-  last_move RESB 2
+  last_move RESB 2 ;last move of the snake
 
-  score     RESB 2
+  score     RESB 2 ; variable to keep the score
 
   SpeedLVL  RESB 4
 
@@ -51,7 +51,7 @@ section .bss
 section  .text
 global_start
 
-_start:
+_start:         ;init the game with the main menu and prepare all to play
     CALL SetVideoMode
     CALL MainMenu
     CALL read_level_keys
@@ -59,14 +59,12 @@ _start:
     MOV [last_move], DX
     CALL SetInitialCoords
     CALL SetScreen
-
-
     JMP ListenForInput
 
 
 
 
-score_label:
+score_label: ;label to print the word "score" in the display
     mov bl, 0x0F
     mov dl, 0
     mov dh, 7
@@ -85,7 +83,22 @@ score_label:
     call print
     RET
 
-MainMenu:
+game_over_label: ;label thar prints the word "END!"
+    mov bl, 0x0F
+    mov dl, 17
+    mov dh, 5
+    call move_cursor
+    mov al, 'E'
+    call print
+    mov al, 'N'
+    call print
+    mov al, 'D'
+    call print
+    mov al, '!'
+    call print
+    RET
+
+MainMenu:   ; structure of the sign to display as main menu, it is ordered letter by letter
   .print_title:
     mov bl, 0xE
     mov dl, 17
@@ -154,39 +167,23 @@ MainMenu:
 
 
 
-move_cursor:
+move_cursor: ; function that assign the position of the cursor to print characters
   mov ah, 0x02
   xor bh, 0
   int 0x10
   ret
 
-print:
+print:    ; auxiliar function to print strings
   call print_char
   inc dl
   call move_cursor
   ret
 
-print_char:
+print_char: ;print a single character in the display
   mov ah, 0x0E
   mov bh, 0x00
-
   int 0x10
   ret
-
-game_over_label:
-    mov bl, 0x0F
-    mov dl, 17
-    mov dh, 5
-    call move_cursor
-    mov al, 'E'
-    call print
-    mov al, 'N'
-    call print
-    mov al, 'D'
-    call print
-    mov al, '!'
-    call print
-    RET
 
 
 halt:
