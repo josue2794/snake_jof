@@ -7,7 +7,7 @@
 %assign SYS_WRITE       4
 %assign STDOUT          1
 
-TOTAL_SEGMENTS equ 0x42
+TOTAL_SEGMENTS equ 0x12C
 
 ZERO equ 0x00
 
@@ -25,8 +25,8 @@ LEVEL3 equ 0x0001
 
 
 SCOREL1 equ 0x0
-SCOREL2 equ 0x5 ;0x64 100
-SCOREL3 equ 0xA ;0xC8 200
+SCOREL2 equ 0x64 ;100
+SCOREL3 equ 0xC8 ;200
 
 section .bss
   x_coord   RESW TOTAL_SEGMENTS ; [x_coord] is the head, [x_coord+2] is the next cell, etc.
@@ -186,35 +186,35 @@ print_char: ;print a single character in the display
   ret
 
 
-halt:
+halt: ;function to restart the game when the players has lost
 	mov ah, 0x0		;Set ah to 0
 	int 0x16		;Get keystroke interrupt
 	cmp ah, 0x1C	;Restart if enter arrow pressed
 	je _start
 	jmp halt
 
-SetVideoMode:
+SetVideoMode: ;sets the video mode to graphics mode with 256 colors
   MOV AH, 0x00
   MOV AL, 0x13
   INT 0x10
   RET
 
-SetScreen:
-  MOV CX, 0x00 ;Coordenada de inicio en x o y
-  MOV DX, 0x00 ;Coordenada de inicio en x o y
-  MOV AL, 0x08 ; Color de la pantalla
+SetScreen: ;print the game area
+  MOV CX, 0x00 ;initial coordinate in x
+  MOV DX, 0x00 ;initial coordinate in y
+  MOV AL, 0x08 ; screen color
   MOV BH, 0x00
-  MOV AH, 0x0C ;modo writePixel
+  MOV AH, 0x0C ; writePixel mode
   .x_loop_begin:
    MOV CX, 0x00
    .y_loop_begin:
     INT 0x10
     INC CX
-    CMP CX, maxScreenX ; final de la pantalla en x
+    CMP CX, maxScreenX ; end of the game area in x
     JNAE .y_loop_begin
    .y_loop_end:
    INC DX
-   CMP DX, maxScreenY ; final de la pantalla en y
+   CMP DX, maxScreenY ; end of the game area in y
    JNAE .x_loop_begin
   .x_loop_end:
   CALL score_label
@@ -226,7 +226,7 @@ SetInitialCoords:
   MOV DX, TOTAL_SEGMENTS
   ADD DX, DX
 
-  .initialize_loop_begin: ;esta porcion le asigna un valor de la coordenada a cada elemento dentro de los arreglos x,y
+  .initialize_loop_begin: ;assign a specific value to each space of the coordinate array
    MOV [x_coord+BX], AX
    MOV [y_coord+BX], AX
    ADD BX, 0x02
@@ -236,7 +236,7 @@ SetInitialCoords:
   MOV AX, ZERO
   MOV [t1]       , AX
   MOV [t2]       , AX
-  MOV AX, 3             ;numero de elementos con el que va a iniciar
+  MOV AX, 3             ; number of elements that the snake start, length of the snake
   MOV [enabled]  , AX
 
   CALL RandomNumber ;set first apple
@@ -260,8 +260,8 @@ ListenForInput:  ;Repeatedly check for keyboard input
   CALL InterpretKeypress
 
   .sleep:
-    MOV	cx, [SpeedLVL]	; Sleep for 0,15 seconds (cx:dx)
-    MOV dx, 0x49F0	; 0x000249F0 = 150000
+    MOV	cx, [SpeedLVL]	; Sleep for control the leves
+    MOV dx, 0x49F0	;
     MOV	ah, 0x86
     INT	0x15		; Sleep
 
@@ -269,19 +269,19 @@ ListenForInput:  ;Repeatedly check for keyboard input
   RET
 
 InterpretKeypress:
-  CMP AH, UP  ; compara la tecla presionada con w
+  CMP AH, UP  ; compare the pressed key with the up arrow
   MOV	[last_move], AH	; save the direction
   JE .u_pressed
 
-  CMP AH, LEFT ;compara la tecla presionada con a
+  CMP AH, LEFT ;compare the pressed key with the left arrow
   MOV	[last_move], AH	; save the direction
   JE .l_pressed
 
-  CMP AH, DOWN ; compara la tecla presionada con s
+  CMP AH, DOWN ; compare the pressed key with the down arrow
   MOV	[last_move], AH	; save the direction
   JE .d_pressed
 
-  CMP AH, RIGHT ; compara la tecla presionada con d
+  CMP AH, RIGHT ; compare the pressed key with the right arrow
   MOV	[last_move], AH	; save the direction
   JE .r_pressed
 
@@ -290,7 +290,7 @@ InterpretKeypress:
   .u_pressed:
   MOV AX, [x_coord]
   MOV BX, [y_coord]
-  DEC BX                    ; para decrementar la posicion de los pixeles se debe tomar en cuenta el tamaño del pixel
+  DEC BX
   JMP .after_control_handle
 
   .l_pressed:
@@ -310,7 +310,7 @@ InterpretKeypress:
   MOV BX, [y_coord]
   INC AX
 
-  .after_control_handle:  ; coloca en t1 y t2 posicion capturada al mover la serpiente
+  .after_control_handle:  ; set the last position and verify all the collisions and draw the new apple and the current snake
   MOV [t1], AX
   MOV [t2], BX
   MOV [last_x], AX
@@ -325,7 +325,7 @@ InterpretKeypress:
   CALL PrintScore
   RET
 
-PrintScore:
+PrintScore: ;print the score in the screen
     MOV bl, 0x0F
     MOV dl, 0x0
     MOV dh, 0x8
@@ -334,7 +334,7 @@ PrintScore:
     CALL	print_int	; print it
     RET
 
-CheckLVL:
+CheckLVL: ;compare the score with the limits to take changes in the level speed
     MOV DX, [score]
     CMP DX, SCOREL2
     JE .setLVL2
@@ -390,7 +390,7 @@ CheckAppleCollision:
   RET
 
 CheckWallCollision:
-  CMP AX, maxScreenX ;verifica si la posicion x de la manzana es igual a la cabeza del snake
+  CMP AX, maxScreenX ;verifica si la posicion x de la pared es igual a la cabeza del snake
   JE .collision_w
   CMP BX, maxScreenY ;verifica si la posicion y de la manzana es igual a la cabeza del snake
   JE .collision_w
