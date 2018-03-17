@@ -1,14 +1,14 @@
-;Snake game
-[BITS 16] 		  ; Set in real mode 	
-[ORG 0x0000]      ; This code is intended to be loaded starting at 0x1000:0x0000
+;Snake!
+[BITS 16]
+[ORG 0x0000]
 
 TOTAL_SEGMENTS equ 0x42
 
 ZERO equ 0x00
 SIZE_PIX equ 0x02
 
-maxScreenX equ 0x32
-maxScreenY equ 0x32
+maxScreenX equ 50d
+maxScreenY equ 50d
 
 
 DOWN equ 0x50
@@ -16,22 +16,49 @@ UP equ 0x48
 LEFT equ 0x4B
 RIGHT equ 0x4D
 
+LEVEL1 equ 0x0004
+LEVEL2 equ 0x0002
+LEVEL3 equ 0x0001
+
+
+
+SCOREL2 equ 0x5 ;0x64 100
+SCOREL3 equ 0xA ;0xC8 200
+
+;checkScore
+;grow score
+;print score
+
 section .bss
-  x_coord   RESW TOTAL_SEGMENTS ; [x_coord] is the head, [x_coord+2] is the next cell, etc. ;arreglo de coordenadas x
+  x_coord   RESW TOTAL_SEGMENTS ; [x_coord] is the head, [x_coord+2] is the next cell, etc.
   y_coord   RESW TOTAL_SEGMENTS ; Same here
   t1        RESB 2
   t2        RESB 2
-  enabled   RESB 2  ; parece ser la cantidad de elemetos de la serpiente
+  enabled   RESB 2  ;cantidad de elemetos de la serpiente
   x_apple   RESB 2
   y_apple   RESB 2
 
+  last_x   RESB 2
+  last_y   RESB 2
+  collision RESB 2
+
   last_move RESB 2
+
+  score     RESB 2
+
+  SpeedLVL  RESB 2
 
 
 section  .text
-global_start:
+global_start
 
 _start:
+  MOV DX, LEVEL1  ;CONFIGURATE LVL
+  MOV [SpeedLVL], DX
+
+  MOV DX, 0x00
+  MOV [score], DX
+
   MOV DX, 0x77
   MOV [last_move], DX
   CALL SetVideoMode
@@ -74,7 +101,7 @@ SetInitialCoords:
   MOV DX, TOTAL_SEGMENTS
   ADD DX, DX
 
-  .initialize_loop_begin: ; parece que esta porcion le asigna un valor de la coordenada a cada elemento dentro de los arreglos x,y
+  .initialize_loop_begin: ;esta porcion le asigna un valor de la coordenada a cada elemento dentro de los arreglos x,y
    MOV [x_coord+BX], AX
    MOV [y_coord+BX], AX
    ADD BX, SIZE_PIX
@@ -108,28 +135,22 @@ ListenForInput:  ;Repeatedly check for keyboard input
   CALL InterpretKeypress
 
   sleep:
-    mov	cx, 0x0002	; Sleep for 0,15 seconds (cx:dx)
+    mov	cx, [SpeedLVL]	; Sleep for 0,15 seconds (cx:dx)
     mov	dx, 0x49F0	; 0x000249F0 = 150000
     mov	ah, 0x86
     int	0x15		; Sleep
 
-
-
   CALL ListenForInput
   RET
-
-
 
 InterpretKeypress:
   CMP AL, 0x77  ; compara la tecla presionada con w
   MOV	[last_move], AL	; save the direction
   JE .u_pressed
 
-
   CMP AL, 0x61 ;compara la tecla presionada con a
   MOV	[last_move], AL	; save the direction
   JE .l_pressed
-
 
   CMP AL, 0x73 ; compara la tecla presionada con s
   MOV	[last_move], AL	; save the direction
@@ -167,12 +188,37 @@ InterpretKeypress:
   .after_control_handle:  ; coloca en t1 y t2 posicion capturada al mover la serpiente
   MOV [t1], AX
   MOV [t2], BX
+  MOV [last_x], AX
+  MOV [last_y], BX
   CALL CheckWallCollision
   CALL CheckAppleCollision
+  CALL CheckSelfCollision
   CALL ShiftArray
   CALL DrawSnake
   CALL DrawApple
+  CALL CheckLVL
   RET
+
+CheckLVL:
+    MOV DX, [score]
+    CMP DX, SCOREL2
+    JE .setLVL2
+    CMP DX, SCOREL3
+    JE .setLVL3
+    JMP .end
+
+  .setLVL2:
+    MOV DX, LEVEL2
+    MOV [SpeedLVL], DX
+    JMP .end
+
+  .setLVL3:
+    MOV DX, LEVEL3
+    MOV [SpeedLVL], DX
+
+  .end:
+    RET
+
 
 CheckAppleCollision:
   CMP AX, [x_apple] ;verifica si la posicion x de la manzana es igual a la cabeza del snake
@@ -185,6 +231,10 @@ CheckAppleCollision:
   INC AX
   MOV [enabled], AX
 
+  MOV AX, [score] ; Cuando colisiona con la manzana se incrementa en 1 score
+  INC AX
+  MOV [score], AX
+
   CALL RandomNumber
   MOV [x_apple], AX
   CALL RandomNumber
@@ -196,23 +246,41 @@ CheckAppleCollision:
 CheckWallCollision:
   CMP AX, maxScreenX ;verifica si la posicion x de la manzana es igual a la cabeza del snake
   JE .collision_w
-
   CMP BX, maxScreenY ;verifica si la posicion y de la manzana es igual a la cabeza del snake
   JE .collision_w
-
   CMP AX, ZERO ;verifica si la posicion x de la manzana es igual a la cabeza del snake
-  JE .collision_w
-
+  JL .collision_w
   CMP BX, ZERO ;verifica si la posicion y de la manzana es igual a la cabeza del snake
-  JE .collision_w
-
+  JL .collision_w
   RET
   ;Colocar mensaje de perder
-
-
   .collision_w:
-  JMP _start
+  CALL game_over ; reinicia el juego si choca
 
+CheckSelfCollision:
+  MOV BX, [enabled]
+  ;MOV [col], BX
+
+  .snake_collision_loop_begin:
+   CMP BX, ZERO
+   JBE .skip
+   MOV [collision], BX
+   ADD BX, BX
+   MOV CX, [x_coord+BX]
+   MOV DX, [y_coord+BX]
+   MOV BX, [collision]
+   DEC BX
+   CMP CX, [last_x]
+   JNE .snake_collision_loop_begin
+   CMP DX, [last_y]
+   JNE .snake_collision_loop_begin
+   CALL game_over ; si ambos son iguales reinicie program
+
+  .skip:
+  RET
+
+game_over:
+    JMP _start
 
 DrawApple:
   MOV CX, [x_apple] ; posicion x del Pixel
@@ -234,7 +302,7 @@ DrawSnake:
     MOV CX, [x_coord+BX]
     MOV DX, [y_coord+BX]
     CALL DrawPixel
-    MOV AL, 0x0A
+    MOV AL, 0x0A ;cambio color para que el siguiente pixel se imprima del mismo color que la pantalla
     MOV CX, [x_coord]
     MOV DX, [y_coord]
     CALL DrawPixel
@@ -274,4 +342,8 @@ DrawPixel:
 RandomNumber: ;genera un numero aleatorio
   RDTSC
   AND EAX, 0xF
+  CMP AX, ZERO
+  JL RandomNumber
+  CMP AX, maxScreenX
+  JG RandomNumber
   RET

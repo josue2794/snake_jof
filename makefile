@@ -9,7 +9,7 @@ DD = dd
 ZERO = /dev/zero
 QEMU = qemu-system-i386
 
-all: bin image usb
+all: bin image
 
 bin:
 		$(CC) $(FLAGS) $(BOOT)$(ASM) -o $(BOOT)$(BIN)
@@ -21,10 +21,10 @@ image:
 		$(DD) if=$(SNAKE)$(BIN) of=$(SNAKE)$(IMG) bs=512 seek=1 conv=notrunc
 
 usb:
-		$(DD) if=$(SNAKE)$(IMG) of=$(DIR) 
-		
+		$(DD) if=$(SNAKE)$(IMG) of=$(DIR)
+
 emul:
-		$(QEMU) $(SNAKE)$(IMG)	
+		$(QEMU) $(SNAKE)$(IMG)
 
 clean:
 		rm $(BOOT)$(BIN) $(SNAKE)$(BIN) $(SNAKE)$(IMG)
